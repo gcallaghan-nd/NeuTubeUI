@@ -1,0 +1,241 @@
+<div class="custom-container-width mt-2">
+
+  <!-- Message Section -->
+  <div *ngIf="showError" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ errorMessage }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <!-- Video Thumbnails Section -->
+  <!-- Shows uploaded video thumbnails and upload functionality -->
+  <div class="row">
+    <div class="col-12">
+      <div class="border-bottom d-flex align-items-center" style="padding-bottom: 20px;">
+        <div class="d-flex flex-column align-items-center justify-content-center" style="margin: 0 20px 0 15px">
+          <img src="../assets/logo.png" alt="NeuTube Logo" class="rounded-circle shadow logo-img">
+          <div class="logo-text">NeuTube</div>
+        </div>
+        <div class="ms-3">
+          <h4>Video Processing and Summarization</h4>
+          <span>Video summary and search use a combination of natural language processing and computer vision techniques to analyze the content of a video. It can quickly and concisely summarize the main points of a video and also allows you to search for specific moments within the video, making it easier to find relevant content.</span>
+        </div>
+      </div>
+
+      <div class="row ms-2 mt-4">
+        <div class="p-3 rounded shadow-sm" style="max-width: 28rem; float: left;">
+          <div class="me-md-1">
+            <h6>Try it out</h6>
+            <p>Select or choose a video and discover how we can summarize it and answer your questions about its content.</p>
+          </div>
+
+          <div class="row" style="width: 28rem;">
+
+            <div style="width: 13.5rem;">
+
+              <div class="mt-2 mb-md-3 card-hover-shadow" style="width: 12.5rem;">
+                <!-- File Upload Area -->
+                <div class="d-flex flex-column justify-content-center align-items-center rounded bg-light"
+                    style="height: 11rem; border: var(--bs-border-width) dashed var(--bs-border-color);"
+                    (dragover)="onDragOver($event)"
+                    (drop)="onDrop($event)">
+                  <i class="bi bi-cloud-arrow-up" style="font-size: 2rem;"></i>
+                  <div class="text-center mb-2">
+                    <span>Drag and drop a video</span>
+                    <p>or</p>
+                    <a href="#" (click)="fileInput.click()">Choose file</a>
+                  </div>
+                </div>
+                <input type="file" #fileInput accept="video/*" style="display: none;" (change)="onVideoUpload($event)">
+              </div>
+
+              <!-- Thumbnails in Odd Positions (1, 3, 5, ...) -->
+              <ng-container *ngFor="let video of uploadedVideos; let i = index">
+                <div *ngIf="i % 2 === 1"
+                    class="card card-hover-shadow mt-2 mb-md-3 clickable-card"
+                    style="width: 12.5rem;"
+                    [class.selected]="video.video_hash === selectedVideoHash"
+                    (click)="loadVideo(video.video_hash, video.videoUrl, video.description)">
+                    <img [src]="video.thumbnail" class="card-img-top" alt="Video Thumbnail" style="height: 10rem; object-fit: cover;">
+                    <div class="card-body">
+                      <h5 class="card-title" [title]="video.title">{{ video.title }}</h5>
+                      <p class="card-text">{{ video.description }}</p>
+                    </div>
+                </div>
+              </ng-container>
+
+            </div>
+
+            <!-- Right Column: Even Thumbnails -->
+            <div style="width: 13.5rem;">
+
+              <!-- Thumbnails in Even Positions (2, 4, 6, ...) -->
+              <ng-container *ngFor="let video of uploadedVideos; let i = index">
+                <div *ngIf="i % 2 === 0"
+                    class="card card-hover-shadow mt-2 mb-md-3 clickable-card"
+                    style="width: 12.5rem;"
+                    [class.selected]="video.video_hash === selectedVideoHash"
+                    (click)="loadVideo(video.video_hash, video.videoUrl, video.description)">
+                    <img [src]="video.thumbnail" class="card-img-top" alt="Video Thumbnail" style="height: 10rem; object-fit: cover;">
+                    <div class="card-body">
+                      <h5 class="card-title" [title]="video.title">{{ video.title }}</h5>
+                      <p class="card-text">{{ video.description }}</p>
+                    </div>
+                </div>
+              </ng-container>
+
+              <!-- Placeholder para "No hay videos" -->
+              <div *ngIf="!uploadedVideos || uploadedVideos.length === 0"
+                  class="card mt-2 mb-md-3"
+                  style="width: 12.5rem; height: 11rem;">
+                  <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
+                    <i class="bi bi-camera-video" style="font-size: 2.5rem; padding-bottom: .5rem;"></i>
+                    <span>No videos to display, please upload your video to get started</span>
+                  </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <div class="col-md-8 ms-2">
+          <div style="margin-top: 0.8rem;">
+            <h6>Locate frames in videos</h6>
+          </div>
+          <div class="my-div-style p-3 rounded shadow-sm">
+            <p>Find a specific moment from a natural language search on pre-processed videos.</p>
+
+            <form class="d-flex" (ngSubmit)="onSearch()">
+              <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" [(ngModel)]="searchQuery" name="searchQuery">
+              <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+
+          </div>
+
+          <div *ngIf="searchResults.length > 0" class="p-3 shadow-sm rounded-bottom">
+            <div class="search-results-container mt-2" style="scrollbar-width: thin;">
+              <ng-container *ngFor="let video of searchResults">
+                <div *ngIf="video.video_description" class="card mb-2 card-hover-shadow"
+                    [ngClass]="{'selected': video.video_description.video_hash+video.video_description.total_frames === selectedVideoHash}">
+                  <div class="row g-0">
+                    <div class="col-md-2 d-flex align-items-center justify-content-center" style="overflow: hidden;">
+                      <img [src]="video.video_description.thumbnail" class="img-cover img-hover-effect" alt="Thumbnail"
+                          (click)="loadVideo(video.video_description.video_hash+video.video_description.total_frames, video.video_description.videoUrl, video.video_description.description, video.video_description.total_frames)">
+                    </div>
+
+                    <div class="col-md-10">
+                      <div class="card-body py-2">
+                        <h6 class="card-title mb-1">{{ video.video_description.video_name }}</h6>
+                        <span class="card-text text-muted" style="font-size: small;">{{ video.video_description.description | slice:0:150 }}...</span>
+
+                        <div class="d-flex flex-wrap mt-2">
+                          <span *ngFor="let frame of video.matching_frames; let i = index" class="me-1">
+                            <i class="bi bi-film" style="margin-right: 5px; font-size: 11px;"></i>
+                            <a style="font-size: 12px; margin-right: 3px;" href="#"
+                              class="btn btn-link p-0 link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover"
+                              [class.active]="selectedIndex === i"
+                              (click)="seekToTimeForSearch(convertFrameToTime(frame, video.video_description.total_frames, video.video_description.video_duration), i, video.video_description.video_hash + video.video_description.total_frames, video.video_description.total_frames)">
+                              {{ convertFrameToTime(frame, video.video_description.total_frames, video.video_description.video_duration) }}
+                            </a>
+                            <span *ngIf="i < video.matching_frames.length - 1" style="font-size: 12px; margin-right: 3px;"> - </span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Video Upload and Display Section -->
+          <div *ngIf="videoUrl" class="p-3 rounded shadow-sm mt-4">
+            <div class="row">
+              <div *ngIf="loading" class="mt-2 d-flex justify-content-center">
+                <div class="spinner-border" role="status"></div>
+              </div>
+
+              <!-- <div class="col-md-7 mt-2" id="videoContainer"> -->
+                <video *ngIf="videoUrl" controls width="100%" class="mt-2">
+                  <source [src]="videoUrl" type="video/mp4">
+                  Your browser does not support HTML5 video.
+                </video>
+              <!-- </div> -->
+
+              <div *ngIf="isIndexingVideo && !loading" class="d-flex align-items-center">
+                <div class="spinner-border text-secondary" role="status" style="height: 15px; width: 15px;"></div>
+                <span class="ms-2 text-muted" style="font-size: 0.9em;">Indexing video...</span>
+              </div>
+            </div>
+
+            <!-- Tab Section for Video Interaction -->
+            <div class="row mt-4">
+              <div class="" *ngIf="videoUrl">
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active"
+                            [disabled]="isProcessingData"
+                            id="summary-tab" data-bs-toggle="tab"
+                            href="#summary" role="tab"
+                            aria-controls="summary" aria-selected="true">Summary</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            [disabled]="isIndexingVideo"
+                            id="chat-tab" data-bs-toggle="tab"
+                            href="#chat" role="tab"
+                            aria-controls="chat" aria-selected="false">Chat</button>
+                  </li>
+                </ul>
+
+                <div class="tab-content" id="myTabContent">
+                  <div class="tab-pane fade show active" id="summary" role="tabpanel" aria-labelledby="summary-tab">
+                    <div *ngIf="isProcessingVideo" class="text-center mt-2">
+                      <div class="spinner-border text-primary" role="status"></div>
+                      <p class="mt-2">Processing video for summary...</p>
+                    </div>
+                    <p *ngIf="!isProcessingVideo" class="mt-2">{{ description }}</p>
+                  </div>
+
+                  <div class="tab-pane fade" id="chat" role="tabpanel" aria-labelledby="chat-tab">
+                    <textarea [(ngModel)]="question" class="form-control mt-2" rows="3" placeholder="Write your question here..."></textarea>
+                    <div class="d-flex justify-content-end">
+                      <button (click)="onAskQuestion()" [disabled]="isProcessingData" class="btn btn-primary mt-2">Send</button>
+                    </div>
+
+                    <div *ngIf="isProcessingQuestion" class="text-center mt-2">
+                      <div class="spinner-border text-primary" role="status"></div>
+                      <p class="mt-2">Processing question...</p>
+                    </div>
+
+                    <div *ngIf="!isProcessingQuestion">
+                      <!-- Results -->
+                      <div *ngIf="timesList.length > 0" class="mt-3">
+                        <h5 class="custom-title">Results</h5>
+
+                        <div class="frame-list-container">
+                          <!-- List of links with icons -->
+                          <div *ngFor="let time of timesList; let i = index" class="mt-2 d-flex align-items-center">
+                            <i class="bi bi-film" style="margin-right: 5px;"></i>
+                            <a href="#" class="btn btn-link p-0 link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" [class.active]="selectedIndex === i" (click)="seekToTime(time, i)">{{ time }}</a>
+                          </div>
+                        </div>
+
+                        <div *ngIf="timesList.length === 0 && sendBtnClicked">
+                          <p class="mt-2">No results were found.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
